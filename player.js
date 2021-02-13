@@ -37,10 +37,11 @@ for(var i = 0; i < channels; i++) {
 	dmxData[i] = 0; 
 }
 
-function setPar(x,r,g,b){
+function setPar(x,r,g,b,uv=0){
 	dmxData[(x*4)+1]=r;
 	dmxData[(x*4)+2]=g;
 	dmxData[(x*4)+3]=b;
+	dmxData[(x*4)+4]=uv;
 }
 
 var lastphase=0;
@@ -84,58 +85,27 @@ input.on('message', (deltaTime, message) => {
 		}
 		lastphase=bphase;
 	}
-/*	console.log(message);
-
-	if((message[0]==176)&&(message[1]==0))
-		dmxData[1]=message[2]*2
-	if((message[0]==176)&&(message[1]==1))
-		dmxData[2]=message[2]*2
-	if((message[0]==176)&&(message[1]==2))
-		dmxData[3]=message[2]*2
-	if((message[0]==176)&&(message[1]==3))
-		dmxData[5]=message[2]*2
-	if((message[0]==176)&&(message[1]==4))
-		dmxData[6]=message[2]*2
-	if((message[0]==176)&&(message[1]==5))
-		dmxData[7]=message[2]*2
-	if((message[0]==176)&&(message[1]==6))
-		dmxData[9]=message[2]*2
-	if((message[0]==176)&&(message[1]==7))
-		dmxData[10]=message[2]*2
-	if((message[0]==176)&&(message[1]==16))
-		dmxData[11]=message[2]*2
-	if((message[0]==176)&&(message[1]==17))
-		dmxData[12]=message[2]*2
-	if((message[0]==176)&&(message[1]==18))
-		dmxData[13]=message[2]*2
-	if((message[0]==176)&&(message[1]==19))
-		dmxData[14]=message[2]*2
-	if((message[0]==176)&&(message[1]==20))
-		dmxData[15]=message[2]*2
-	if((message[0]==176)&&(message[1]==21))
-		dmxData[16]=message[2]*2
-	if((message[0]==176)&&(message[1]==22))
-		dmxData[17]=message[2]*2
-	if((message[0]==176)&&(message[1]==23))
-		dmxData[18]=message[2]*2
-*/
 });
 
 var levelalert=0;
+var leveltrigger;
 setInterval(function () {
-	
-	/*if(level > 100) levelalert = 20;
+
+	if(level > 100) { leveltrigger++ } else {leveltrigger=0};
+	if(leveltrigger > 10) levelalert = 20;
 	if(levelalert > 0) levelalert--;
-	if((level > 100)|| levelalert>0){
-		dmxData[25]=255;
-		dmxData[26]=0;
-		dmxData[27]=0;
+	if(levelalert>0){
+		setPar(6,255,0,0);
+		setPar(7,0,0,255);
+	
 	}
 	else{
-		dmxData[25]=0;
-		dmxData[26]=0;
-		dmxData[27]=djblue;
-	}*/
+		setPar(6,0,0,djblue);
+		setPar(7,255,0,0,255);
+	}
+	
+	setPar(8,phase % 255,phaselength % 255,level);
+
 	count+=animations[curr_anim].step;
 	animations[curr_anim].tick(count,phase,phaselength,setPar);
 	phase++;
@@ -155,7 +125,6 @@ setInterval(function () {
 					return console.log('Error on write DMX data ', err.message);
 				}
 				port.drain();
-				//console.log(Buffer.from(dmxData));
 			});
 		});
 	});
