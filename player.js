@@ -104,7 +104,7 @@ setInterval(function () {
 		setPar(7,255,0,0,255);
 	}
 	
-	setPar(8,phase % 255,phaselength % 255,level);
+	setPar(8,phase % 255,phaselength % 255,level,curr_anim);
 
 	count+=animations[curr_anim].step;
 	animations[curr_anim].tick(count,phase,phaselength,setPar);
