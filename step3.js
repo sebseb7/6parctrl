@@ -29,22 +29,40 @@ exports.anim = {
 		if(phasecount==0){
 			if(phase < segment){
 				setPar(2,255,0,0);
+				setPar(3,0,0,0,255);
+				setPar(4,0,0,0,255);
+				setPar(5,0,0,0,255);
 			}
 			else if(phase < segment*2){
 				setPar(3,255,0,0);
+				setPar(2,0,0,0,255);
+				setPar(4,0,0,0,255);
+				setPar(5,0,0,0,255);
 			}
 			else {
 				setPar(4,255,0,0);
+				setPar(3,0,0,0,255);
+				setPar(2,0,0,0,255);
+				setPar(5,0,0,0,255);
 			}
 		}else{
 			if(phase < segment){
 				setPar(5,255,0,0);
+				setPar(3,0,0,0,255);
+				setPar(4,0,0,0,255);
+				setPar(2,0,0,0,255);
 			}
 			else if(phase < segment*2){
 				setPar(4,255,0,0);
+				setPar(3,0,0,0,255);
+				setPar(2,0,0,0,255);
+				setPar(5,0,0,0,255);
 			}
 			else {
 				setPar(3,255,0,0);
+				setPar(2,0,0,0,255);
+				setPar(4,0,0,0,255);
+				setPar(5,0,0,0,255);
 			}
 		}
 

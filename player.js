@@ -30,7 +30,7 @@ animations.push(require('./step5.js').anim);
 animations.push(require('./step6.js').anim);
 animations.push(require('./step7.js').anim);
 
-//curr_anim = animations.length-1;
+curr_anim = animations.length-2;
 
 function now(){
 	return Math.floor(Date.now() / 1000);
@@ -127,6 +127,7 @@ setInterval(function () {
 	if(count > animations[curr_anim].duration){
 		count=0;
 		curr_anim++;
+		//console.log(curr_anim);
 	}
 	if(curr_anim == animations.length) {
 		curr_anim = 0;
