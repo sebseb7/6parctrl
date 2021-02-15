@@ -22,13 +22,19 @@ var port = new SerialPort('COM4',options);
 var animations = [];
 var curr_anim = 0;
 
-animations.push(require('./step6.js').anim);
-animations.push(require('./step5.js').anim);
-animations.push(require('./step4.js').anim);
-animations.push(require('./step3.js').anim);
 animations.push(require('./step1.js').anim);
 animations.push(require('./step2.js').anim);
+animations.push(require('./step3.js').anim);
+animations.push(require('./step4.js').anim);
+animations.push(require('./step5.js').anim);
+animations.push(require('./step6.js').anim);
+animations.push(require('./step7.js').anim);
 
+//curr_anim = animations.length-1;
+
+function now(){
+	return Math.floor(Date.now() / 1000);
+}
 var count = 0;
 
 var channels = 40;
@@ -51,6 +57,8 @@ var xfader=0;
 var level=0;
 var shift=0;
 var djblue=254;
+var lastphasets = now();
+
 input.on('message', (deltaTime, message) => {
 
 	if((message[0]==176)&&(message[1]==124)){
@@ -72,6 +80,7 @@ input.on('message', (deltaTime, message) => {
 		if(bphase < lastphase){
 			phaselength=phase;
 			phase=0;
+			lastphasets=now();
 		}
 		lastphase=bphase;
 	}
@@ -82,6 +91,7 @@ input.on('message', (deltaTime, message) => {
 		if(bphase < lastphase){
 			phaselength=phase;
 			phase=0;
+			lastphasets=now();
 		}
 		lastphase=bphase;
 	}
@@ -90,6 +100,11 @@ input.on('message', (deltaTime, message) => {
 var levelalert=0;
 var leveltrigger;
 setInterval(function () {
+	
+	if(now() - lastphasets > 3){
+		if(phase > 20) phase=0;
+		phaselength=20;
+	}
 
 	if(level > 100) { leveltrigger++ } else {leveltrigger=0};
 	if(leveltrigger > 10) levelalert = 20;
