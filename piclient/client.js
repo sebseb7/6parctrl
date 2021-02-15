@@ -27,6 +27,7 @@ animations.push(require('./step3.js').anim);
 animations.push(require('./step4.js').anim);
 animations.push(require('./step5.js').anim);
 animations.push(require('./step6.js').anim);
+animations.push(require('./step7.js').anim);
 
 function setPix(x,r,g,b){
 	const ledvar = b | r<<8 | g<<16;
@@ -41,8 +42,9 @@ function process(data) {
 	if(lastStep != data[36]) count = 0;
 	lastStep = data[36];
 
-	count+=animations[data[36]].step;
-	animations[data[36]].tick(count,data[33],data[34],data[35],setPix,NUM_LEDS,data);
+	if(!animations[lastStep]) lastStep = 0;
+	count+=animations[lastStep].step;
+	animations[lastStep].tick(count,data[33],data[34],data[35],setPix,NUM_LEDS,data);
 	ws281x.render(pixelData);
 }
 
