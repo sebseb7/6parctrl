@@ -20,6 +20,7 @@ var options = {
 var port = new SerialPort('COM4',options);
 
 var animations = [];
+var padani = [];
 var curr_anim = 0;
 
 animations.push(require('./step1.js').anim);
@@ -29,6 +30,14 @@ animations.push(require('./step4.js').anim);
 animations.push(require('./step5.js').anim);
 animations.push(require('./step6.js').anim);
 animations.push(require('./step7.js').anim);
+padani.push(require('./pad1.js').anim);
+padani.push(require('./pad2.js').anim);
+padani.push(require('./pad3.js').anim);
+padani.push(require('./pad1.js').anim);
+padani.push(require('./pad1.js').anim);
+padani.push(require('./pad1.js').anim);
+padani.push(require('./pad1.js').anim);
+padani.push(require('./pad8.js').anim);
 
 curr_anim = animations.length-2;
 
@@ -58,22 +67,90 @@ var level=0;
 var shift=0;
 var djblue=254;
 var lastphasets = now();
-
+var decksel = 0;
+var pads = 0;
 input.on('message', (deltaTime, message) => {
 
-	if((message[0]==176)&&(message[1]==124)){
+	if((message[0]==176)&&(message[1]==100)){
+		decksel = message[2];
+	}
+	else if((decksel == 127)&&(message[0]==176)&&(message[1]==101)){
+		if((pads != 1)&&(message[2]==127)){
+			pads = 1;
+		}
+		else if((pads == 1)&&(message[2]==127)){
+			pads = 0;
+		}
+	}
+	else if((decksel == 127)&&(message[0]==176)&&(message[1]==102)){
+		if((pads != 2)&&(message[2]==127)){
+			pads = 2;
+		}
+		else if((pads == 2)&&(message[2]==127)){
+			pads = 0;
+		}
+	}
+	else if((decksel == 127)&&(message[0]==176)&&(message[1]==103)){
+		if((pads != 3)&&(message[2]==127)){
+			pads = 3;
+		}
+		else if((pads == 3)&&(message[2]==127)){
+			pads = 0;
+		}
+	}
+	else if((decksel == 127)&&(message[0]==176)&&(message[1]==104)){
+		if((pads != 4)&&(message[2]==127)){
+			pads = 4;
+		}
+		else if((pads == 4)&&(message[2]==127)){
+			pads = 0;
+		}
+	}
+	else if((decksel == 127)&&(message[0]==176)&&(message[1]==105)){
+		if((pads != 5)&&(message[2]==127)){
+			pads = 5;
+		}
+		else if((pads == 5)&&(message[2]==127)){
+			pads = 0;
+		}
+	}
+	else if((decksel == 127)&&(message[0]==176)&&(message[1]==106)){
+		if((pads != 6)&&(message[2]==127)){
+			pads = 6;
+		}
+		else if((pads == 6)&&(message[2]==127)){
+			pads = 0;
+		}
+	}
+	else if((decksel == 127)&&(message[0]==176)&&(message[1]==107)){
+		if((pads != 7)&&(message[2]==127)){
+			pads = 7;
+		}
+		else if((pads == 7)&&(message[2]==127)){
+			pads = 0;
+		}
+	}
+	else if((decksel == 127)&&(message[0]==176)&&(message[1]==108)){
+		if((pads != 8)&&(message[2]==127)){
+			pads = 8;
+		}
+		else if((pads == 8)&&(message[2]==127)){
+			pads = 0;
+		}
+	}
+	else if((message[0]==176)&&(message[1]==124)){
 		xfader = message[2];
 	}
-	if((message[0]==176)&&(message[1]==121)){
+	else if((message[0]==176)&&(message[1]==121)){
 		shift = message[2];
 	}
-	if((message[0]==176)&&(message[1]==122)&&(shift==127)){
+	else if((message[0]==176)&&(message[1]==122)&&(shift==127)){
 		djblue = message[2]*2;
 	}
-	if((message[0]==176)&&(message[1]==125)){
+	else if((message[0]==176)&&(message[1]==125)){
 		level = message[2];
 	}
-	if((message[0]==176)&&(message[1]==126)&&(xfader<64)){
+	else if((message[0]==176)&&(message[1]==126)&&(xfader<64)){
 		var bphase = message[2];
 		bphase+=64;
 		if(bphase>=128)bphase-=128;
@@ -84,7 +161,7 @@ input.on('message', (deltaTime, message) => {
 		}
 		lastphase=bphase;
 	}
-	if((message[0]==176)&&(message[1]==127)&&(xfader>=64)){
+	else if((message[0]==176)&&(message[1]==127)&&(xfader>=64)){
 		var bphase = message[2];
 		bphase+=64;
 		if(bphase>=128)bphase-=128;
@@ -94,6 +171,8 @@ input.on('message', (deltaTime, message) => {
 			lastphasets=now();
 		}
 		lastphase=bphase;
+	}else{
+		//console.log(message);
 	}
 });
 
@@ -119,10 +198,14 @@ setInterval(function () {
 		setPar(7,255,0,0,255);
 	}
 	
-	setPar(8,phase % 255,phaselength % 255,level,curr_anim);
-
-	count+=animations[curr_anim].step;
-	animations[curr_anim].tick(count,phase,phaselength,setPar);
+	if(pads != 0) {
+		padani[pads-1].tick(count,phase,phaselength,setPar);
+		setPar(8,phase % 255,phaselength % 255,level,1);
+	}else{
+		setPar(8,phase % 255,phaselength % 255,level,curr_anim);
+		count+=animations[curr_anim].step;
+		animations[curr_anim].tick(count,phase,phaselength,setPar);
+	}
 	phase++;
 	if(count > animations[curr_anim].duration){
 		count=0;
