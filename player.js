@@ -1,6 +1,37 @@
 const SerialPort = require('serialport');
 const midi = require('midi');
 
+var port = null;
+
+var options = {
+	'baudRate': 250000,
+	'dataBits': 8,
+	'stopBits': 2,
+	'parity': 'none'
+};
+
+function checkport() {
+	SerialPort.list().then(
+		function(ports){
+			for(var serial of ports){
+				if(serial.manufacturer == 'FTDI'){
+					port = new SerialPort(serial.path,options);
+					port.on('error',function(){
+						port.close(function(){
+							port = null;
+							setTimeout(checkport,2000);
+						});
+					});
+				}
+			}
+			if(! port) {
+				setTimeout(checkport,2000);
+			}
+		}
+	)
+}
+checkport();
+
 const input = new midi.Input();
 
 for(var i = 0; i < input.getPortCount();i++){
@@ -10,14 +41,7 @@ for(var i = 0; i < input.getPortCount();i++){
 	}
 }
 
-var options = {
-	'baudRate': 250000,
-	'dataBits': 8,
-	'stopBits': 2,
-	'parity': 'none'
-};
 
-var port = new SerialPort('COM4',options);
 
 var animations = [];
 var padani = [];
@@ -64,8 +88,10 @@ var phase=0;
 var phaselength=0;
 var xfader=0;
 var level=0;
-var shift=0;
 var djblue=254;
+var barred=254;
+var knobmode=0;
+var knobmodestate=0;
 var lastphasets = now();
 var decksel = 0;
 var pads = 0;
@@ -138,14 +164,23 @@ input.on('message', (deltaTime, message) => {
 			pads = 0;
 		}
 	}
+	else if((message[0]==176)&&(message[1]==120)){
+		if(message[2] > knobmodestate) {
+			knobmode = 1;
+		}else{
+			knobmode = 0;
+		}
+		knobmodestate = message[2];
+	}
 	else if((message[0]==176)&&(message[1]==124)){
 		xfader = message[2];
 	}
-	else if((message[0]==176)&&(message[1]==121)){
-		shift = message[2];
-	}
-	else if((message[0]==176)&&(message[1]==122)&&(shift==127)){
-		djblue = message[2]*2;
+	else if((message[0]==176)&&(message[1]==122)&&(decksel==127)){
+		if(knobmode == 0){
+			djblue = message[2]*2;
+		}else{
+			barred = message[2]*2;
+		}
 	}
 	else if((message[0]==176)&&(message[1]==125)){
 		level = message[2];
@@ -195,7 +230,7 @@ setInterval(function () {
 	}
 	else{
 		setPar(6,0,0,djblue);
-		setPar(7,255,0,0,255);
+		setPar(7,barred,0,0,barred);
 	}
 	
 	if(pads != 0) {
@@ -215,17 +250,18 @@ setInterval(function () {
 	if(curr_anim == animations.length) {
 		curr_anim = 0;
 	}
-	port.set({brk:true,rts:true}, function() {
-		Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1);
-		port.set({brk:false,rts:true}, function() {
+	if (port)
+		port.set({brk:true,rts:true}, function() {
 			Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1);
-			port.write(Buffer.from(dmxData), function(err) {
-				if (err) {
-					return console.log('Error on write DMX data ', err.message);
-				}
-				port.drain();
+			port.set({brk:false,rts:true}, function() {
+				Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1);
+				port.write(Buffer.from(dmxData), function(err) {
+					if (err) {
+						return console.log('Error on write DMX data ', err.message);
+					}
+					port.drain();
+				});
 			});
 		});
-	});
 }, 1000 / 60);
 
