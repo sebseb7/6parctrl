@@ -1,5 +1,15 @@
 const SerialPort = require('serialport');
 const midi = require('midi');
+const { app, Menu, Tray } = require('electron');
+
+let tray = null;
+if(app) app.whenReady().then(() => {
+	tray = new Tray(__dirname+'/trayicon.png');
+	const contextMenu = Menu.buildFromTemplate([
+		{ label: 'Exit', role: 'quit', type: 'normal' }
+	])
+	tray.setContextMenu(contextMenu);
+});
 
 var port = null;
 

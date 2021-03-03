@@ -1,16 +1,27 @@
 {
   "name": "6parctrl",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "dmxTraktor",
+  "main": "player.js",
   "dependencies": {
     "midi": "^1.0.0",
     "serialport": "^9.0.6"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "electron": "^12.0.0",
+    "electron-builder": "^22.10.5",
+    "electron-rebuild": "^2.3.5"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "Seb",
+  "license": "ISC",
+  "build": {
+    "portable": {},
+    "win": {
+      "target": "portable",
+      "icon": "trayicon.png"
+    }
+  }
 }
