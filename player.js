@@ -26,6 +26,7 @@ function checkport() {
 			for(var serial of ports){
 				if(serial.manufacturer == 'FTDI'){
 					port = new SerialPort(serial.path,options);
+					console.log('DMX found');
 					port.on('error',function(){
 						port.close(function(){
 							port = null;
@@ -81,11 +82,7 @@ function now(){
 var count = 0;
 
 var channels = 40;
-var dmxData = [];
-for(var i = 0; i < channels; i++) {
-	dmxData[i] = 0; 
-}
-
+var dmxData = Buffer.alloc(513, 0);
 function setPar(x,r,g,b,uv=0){
 	dmxData[(x*4)+1]=r;
 	dmxData[(x*4)+2]=g;
@@ -223,6 +220,11 @@ input.on('message', (deltaTime, message) => {
 
 var levelalert=0;
 var leveltrigger;
+const ENTTEC_PRO_DMX_STARTCODE = 0x00;
+const ENTTEC_PRO_START_OF_MSG = 0x7e;
+const ENTTEC_PRO_END_OF_MSG = 0xe7;
+const ENTTEC_PRO_SEND_DMX_RQ = 0x06;
+
 setInterval(function () {
 	
 	if(now() - lastphasets > 3){
@@ -260,18 +262,25 @@ setInterval(function () {
 	if(curr_anim == animations.length) {
 		curr_anim = 0;
 	}
-	if (port)
-		port.set({brk:true,rts:true}, function() {
-			Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1);
-			port.set({brk:false,rts:true}, function() {
-				Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1);
-				port.write(Buffer.from(dmxData), function(err) {
-					if (err) {
-						return console.log('Error on write DMX data ', err.message);
-					}
-					port.drain();
-				});
-			});
+	if (port) {
+		const hdr = Buffer.from([
+			ENTTEC_PRO_START_OF_MSG,
+			ENTTEC_PRO_SEND_DMX_RQ,
+			(dmxData.length) & 0xff,
+			((dmxData.length) >> 8) & 0xff,
+			ENTTEC_PRO_DMX_STARTCODE,
+		]);
+		const msg = Buffer.concat([
+			hdr,
+			dmxData.slice(1),
+			Buffer.from([ENTTEC_PRO_END_OF_MSG]),
+		]);
+		port.write(msg, function(err) {
+			if (err) {
+				return console.log('Error on write DMX data ', err.message);
+			}
+			port.drain();
 		});
-}, 1000 / 60);
+	}
+}, 1000 / 40);
 
