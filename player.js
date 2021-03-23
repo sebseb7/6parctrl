@@ -20,6 +20,7 @@ var options = {
 	'parity': 'none'
 };
 
+var dmxmode = 'normal';
 function checkport() {
 	SerialPort.list().then(
 		function(ports){
@@ -27,6 +28,12 @@ function checkport() {
 				if(serial.manufacturer == 'FTDI'){
 					port = new SerialPort(serial.path,options);
 					console.log('DMX found');
+					if(serial.serialNumber == 'EN264290') {
+						console.log('enttec');
+						dmxmode = 'enttec'
+					}else{
+						dmxmode = 'normal';
+					}
 					port.on('error',function(){
 						port.close(function(){
 							port = null;
@@ -43,6 +50,16 @@ function checkport() {
 }
 checkport();
 
+const input_nxs = new midi.Input();
+var nxs = false;
+for(var i = 0; i < input_nxs.getPortCount();i++){
+	console.log(input_nxs.getPortName(i));
+	if(input_nxs.getPortName(i) == 'DJM-900nexus 1'){
+		input_nxs.openPort(i);
+		console.log('open');
+	}
+}
+
 const input = new midi.Input();
 
 for(var i = 0; i < input.getPortCount();i++){
@@ -51,6 +68,7 @@ for(var i = 0; i < input.getPortCount();i++){
 		input.openPort(i);
 	}
 }
+
 
 
 
@@ -82,7 +100,7 @@ function now(){
 var count = 0;
 
 var channels = 40;
-var dmxData = Buffer.alloc(513, 0);
+var dmxData = Buffer.alloc(channels, 0);
 function setPar(x,r,g,b,uv=0){
 	dmxData[(x*4)+1]=r;
 	dmxData[(x*4)+2]=g;
@@ -100,9 +118,33 @@ var barred=254;
 var knobmode=0;
 var knobmodestate=0;
 var lastphasets = now();
+var lastnxsts = 0;
 var decksel = 0;
 var pads = 0;
+input_nxs.ignoreTypes(true, false, true);
+var midiclock=0;
+input_nxs.on('message', (deltaTime, message) => {
+	
+	if(message[0]==250){
+		midiclock=0;
+	}else if(message[0]==248){
+		midiclock++;
+		if(midiclock == 24) {
+			midiclock=0;
+			phaselength=phase;
+			phase=0;
+			console.log(phaselength);
+			lastphasets=now();
+			lastnxsts = now();
+		}
+	}else{
+
+		console.log(message);
+	}
+});
 input.on('message', (deltaTime, message) => {
+	
+	if(now() - lastphasets < 3) return;
 
 	if((message[0]==176)&&(message[1]==100)){
 		decksel = message[2];
@@ -226,7 +268,7 @@ const ENTTEC_PRO_END_OF_MSG = 0xe7;
 const ENTTEC_PRO_SEND_DMX_RQ = 0x06;
 
 setInterval(function () {
-	
+
 	if(now() - lastphasets > 3){
 		if(phase > 20) phase=0;
 		phaselength=20;
@@ -262,7 +304,7 @@ setInterval(function () {
 	if(curr_anim == animations.length) {
 		curr_anim = 0;
 	}
-	if (port) {
+	if (port && dmxmode == 'enttec') {
 		const hdr = Buffer.from([
 			ENTTEC_PRO_START_OF_MSG,
 			ENTTEC_PRO_SEND_DMX_RQ,
@@ -282,5 +324,18 @@ setInterval(function () {
 			port.drain();
 		});
 	}
+	if (port && dmxmode != 'enttec')
+		port.set({brk:true,rts:true}, function() {
+			Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1);
+			port.set({brk:false,rts:true}, function() {
+				Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1);
+				port.write(dmxData, function(err) {
+					if (err) {
+						return console.log('Error on write DMX data ', err.message);
+					}
+					port.drain();
+				});
+			});
+		});
 }, 1000 / 40);
 
