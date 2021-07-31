@@ -162,7 +162,7 @@ input_nxs.on('message', (deltaTime, message) => {
 		}
 	}else{
 
-		console.log(message);
+	//	console.log(message);
 	}
 });
 input.on('message', (deltaTime, message) => {
@@ -333,10 +333,10 @@ setInterval(function () {
 		animations[curr_anim].tick(count,phase,phaselength,setPar,setScan);
 	}
 	phase++;
-	if(count > animations[curr_anim].duration){
+	if(count > animations[curr_anim].duration / 4){
 		count=0;
 		curr_anim++;
-		console.log('new ani'+curr_anim);
+		//console.log((new Date())+' new ani '+curr_anim);
 	}
 	if(curr_anim == animations.length) {
 		curr_anim = 0;
