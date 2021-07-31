@@ -76,6 +76,8 @@ var animations = [];
 var padani = [];
 var curr_anim = 0;
 
+//animations.push(require('./step0.js').anim);
+
 animations.push(require('./step1.js').anim);
 animations.push(require('./step2.js').anim);
 animations.push(require('./step3.js').anim);
@@ -92,8 +94,6 @@ padani.push(require('./pad1.js').anim);
 padani.push(require('./pad1.js').anim);
 padani.push(require('./pad8.js').anim);
 
-curr_anim = animations.length-2;
-
 function now(){
 	return Math.floor(Date.now() / 1000);
 }
@@ -107,6 +107,23 @@ function setPar(x,r,g,b,uv=0){
 	dmxData[(x*4)+3]=b;
 	dmxData[(x*4)+4]=uv;
 }
+
+function setScan(n,x,y,v,c,g,gr){
+	dmxData[(n*14)+1]=x;
+	dmxData[(n*14)+2]=0;
+	dmxData[(n*14)+3]=y;
+	dmxData[(n*14)+4]=0;
+	dmxData[(n*14)+5]=0;
+	dmxData[(n*14)+6]=v;
+	dmxData[(n*14)+7]=0;
+	dmxData[(n*14)+8]=c;
+	dmxData[(n*14)+9]=g;
+	dmxData[(n*14)+10]=gr;
+	dmxData[(n*14)+11]=255;
+	dmxData[(n*14)+12]=0;
+	dmxData[(n*14)+13]=0;
+}
+var phasetype = 0;
 
 var lastphase=0;
 var phase=0;
@@ -124,18 +141,24 @@ var pads = 0;
 input_nxs.ignoreTypes(true, false, true);
 var midiclock=0;
 input_nxs.on('message', (deltaTime, message) => {
+
+	if(phasetype == 2) return;
 	
 	if(message[0]==250){
 		midiclock=0;
+		console.log('start');
 	}else if(message[0]==248){
 		midiclock++;
 		if(midiclock == 24) {
 			midiclock=0;
 			phaselength=phase;
 			phase=0;
-			console.log(phaselength);
 			lastphasets=now();
 			lastnxsts = now();
+			if(phasetype != 1){
+				phasetype = 1;
+				console.log('djm phase');
+			}
 		}
 	}else{
 
@@ -144,7 +167,7 @@ input_nxs.on('message', (deltaTime, message) => {
 });
 input.on('message', (deltaTime, message) => {
 	
-	if(now() - lastphasets < 3) return;
+	//if(now() - lastphasets < 3) return;
 
 	if((message[0]==176)&&(message[1]==100)){
 		decksel = message[2];
@@ -242,6 +265,10 @@ input.on('message', (deltaTime, message) => {
 			phaselength=phase;
 			phase=0;
 			lastphasets=now();
+			if(phasetype != 2){
+				phasetype = 2;
+				console.log('traktor phase');
+			}
 		}
 		lastphase=bphase;
 	}
@@ -253,13 +280,17 @@ input.on('message', (deltaTime, message) => {
 			phaselength=phase;
 			phase=0;
 			lastphasets=now();
+			if(phasetype != 2){
+				phasetype = 2;
+				console.log('traktor phase');
+			}
 		}
 		lastphase=bphase;
 	}else{
 		//console.log(message);
 	}
+//		console.log(message);
 });
-
 var levelalert=0;
 var leveltrigger;
 const ENTTEC_PRO_DMX_STARTCODE = 0x00;
@@ -267,11 +298,17 @@ const ENTTEC_PRO_START_OF_MSG = 0x7e;
 const ENTTEC_PRO_END_OF_MSG = 0xe7;
 const ENTTEC_PRO_SEND_DMX_RQ = 0x06;
 
+
 setInterval(function () {
 
+//	console.log(phase);
 	if(now() - lastphasets > 3){
-		if(phase > 20) phase=0;
-		phaselength=20;
+		if(phase > 12) phase=0;
+		phaselength=12;
+		if(phasetype != 3){
+			phasetype = 3;
+			console.log('dummy phase');
+		}
 	}
 
 	if(level > 100) { leveltrigger++ } else {leveltrigger=0};
@@ -288,22 +325,23 @@ setInterval(function () {
 	}
 	
 	if(pads != 0) {
-		padani[pads-1].tick(count,phase,phaselength,setPar);
+		padani[pads-1].tick(count,phase,phaselength,setPar,setScan);
 		setPar(8,phase % 255,phaselength % 255,level,1);
 	}else{
 		setPar(8,phase % 255,phaselength % 255,level,curr_anim);
 		count+=animations[curr_anim].step;
-		animations[curr_anim].tick(count,phase,phaselength,setPar);
+		animations[curr_anim].tick(count,phase,phaselength,setPar,setScan);
 	}
 	phase++;
 	if(count > animations[curr_anim].duration){
 		count=0;
 		curr_anim++;
-		//console.log(curr_anim);
+		console.log('new ani'+curr_anim);
 	}
 	if(curr_anim == animations.length) {
 		curr_anim = 0;
 	}
+	dmxData[30]=0;
 	if (port && dmxmode == 'enttec') {
 		const hdr = Buffer.from([
 			ENTTEC_PRO_START_OF_MSG,
@@ -324,7 +362,7 @@ setInterval(function () {
 			port.drain();
 		});
 	}
-	if (port && dmxmode != 'enttec')
+/*	if (port && dmxmode != 'enttec')
 		port.set({brk:true,rts:true}, function() {
 			Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1);
 			port.set({brk:false,rts:true}, function() {
@@ -336,6 +374,6 @@ setInterval(function () {
 					port.drain();
 				});
 			});
-		});
+		});*/
 }, 1000 / 40);
 
