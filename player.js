@@ -1,15 +1,51 @@
 const SerialPort = require('serialport');
 const midi = require('midi');
 const { app, Menu, Tray } = require('electron');
+const  drawing = require('pngjs-draw');
+const fs = require('fs');
 
+var png = drawing(require('pngjs').PNG);
 let tray = null;
-if(app) app.whenReady().then(() => {
-	tray = new Tray(__dirname+'/trayicon.png');
-	const contextMenu = Menu.buildFromTemplate([
-		{ label: 'Exit', role: 'quit', type: 'normal' }
-	])
-	tray.setContextMenu(contextMenu);
-});
+
+var loopMidiPort = 0;
+
+fs.createReadStream(__dirname+'/trayicon.png')
+  .pipe(new png({ filterType: 4 }))
+  .on('parsed', function() {
+		this.pack().pipe(fs.createWriteStream('tray.out.png')).on('close',function() {
+			if(app) app.whenReady().then(() => {
+				tray = new Tray('tray.out.png');
+				const contextMenu = Menu.buildFromTemplate([
+					{ label: 'Exit', role: 'quit', type: 'normal' }
+				])
+				tray.setContextMenu(contextMenu);
+				updateTrayIcon();
+			});
+		});
+  });
+
+	function updateTrayIcon(){
+		var png = drawing(require('pngjs').PNG);
+
+		fs.createReadStream(__dirname+'/trayicon.png')
+		  .pipe(new png({ filterType: 4 }))
+		  .on('parsed', function() {
+
+				if( loopMidiPort == 1 )
+					this.fillRect(0,0,127,127, this.colors.new(0,255,0,255))
+				else
+					this.fillRect(0,0,127,127, this.colors.new(255,0,0,255))
+
+				this.fillRect(0,127,127,127, this.colors.new(255,0,0,255))
+				this.fillRect(127,0,127,127, this.colors.new(255,0,0,255))
+				this.fillRect(127,127,127,127, this.colors.new(255,0,0,255))
+
+		    this.pack().pipe(fs.createWriteStream('tray.out.png')).on('close',function() {
+						tray.setImage('tray.out.png');
+						setTimeout(updateTrayIcon,500)
+				});
+		  });
+	}
 
 var port = null;
 
@@ -66,6 +102,7 @@ for(var i = 0; i < input.getPortCount();i++){
 	console.log(input.getPortName(i));
 	if(input.getPortName(i) == 'loopMIDI Port 0'){
 		input.openPort(i);
+		loopMidiPort = 1;
 	}
 }
 
@@ -143,7 +180,7 @@ var midiclock=0;
 input_nxs.on('message', (deltaTime, message) => {
 
 	if(phasetype == 2) return;
-	
+
 	if(message[0]==250){
 		midiclock=0;
 		console.log('start');
@@ -166,7 +203,7 @@ input_nxs.on('message', (deltaTime, message) => {
 	}
 });
 input.on('message', (deltaTime, message) => {
-	
+
 	//if(now() - lastphasets < 3) return;
 
 	if((message[0]==176)&&(message[1]==100)){
@@ -317,13 +354,13 @@ setInterval(function () {
 	if(levelalert>0){
 		setPar(6,255,0,0);
 		setPar(7,0,0,255);
-	
+
 	}
 	else{
 		setPar(6,0,0,djblue);
 		setPar(7,barred,0,0,barred);
 	}
-	
+
 	if(pads != 0) {
 		padani[pads-1].tick(count,phase,phaselength,setPar,setScan);
 		setPar(8,phase % 255,phaselength % 255,level,1);
@@ -376,4 +413,3 @@ setInterval(function () {
 			});
 		});*/
 }, 1000 / 40);
-

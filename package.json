@@ -5,10 +5,12 @@
   "main": "player.js",
   "dependencies": {
     "midi": "^1.0.0",
+    "pngjs": "^6.0.0",
+    "pngjs-draw": "0.0.6",
     "serialport": "^9.0.6"
   },
   "devDependencies": {
-    "electron": "^12.0.0",
+    "electron": "^12.0.16",
     "electron-builder": "^22.10.5",
     "electron-rebuild": "^2.3.5"
   },
