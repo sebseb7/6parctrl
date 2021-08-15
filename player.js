@@ -40,6 +40,8 @@ fs.createReadStream(__dirname+'/trayicon.png')
 				this.fillRect(127,0,127,127, this.colors.new(255,0,0,255))
 				this.fillRect(127,127,127,127, this.colors.new(255,0,0,255))
 
+
+
 		    this.pack().pipe(fs.createWriteStream('tray.out.png')).on('close',function() {
 						tray.setImage('tray.out.png');
 						setTimeout(updateTrayIcon,500)
