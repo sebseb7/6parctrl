@@ -28,7 +28,7 @@ var phasecount=0;
 var h = 0;
 var rgb2=HSVtoRGB(1,1,1);
 exports.anim = {
-	tick: function (count,phase,phaselength,setPar) 
+	tick: function (count,phase,phaselength,setPar,setScanner,setStrobe) 
 	{
 		//console.log(phase);	
 		if(phase == 0) {
@@ -57,6 +57,9 @@ exports.anim = {
 			setPar(1,0,0,0);
 		}
 
+		setScanner(0,255*128,255*128,255,(phasecount<2)?96:112,16,115,255);	
+		setScanner(1,255*128,255*128,255,(phasecount<2)?96:112,16,141,255);	
+		setStrobe(0,0);
 
 	},
 	duration:60,

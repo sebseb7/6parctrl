@@ -27,7 +27,7 @@ function HSVtoRGB(h, s, v) {
 var h = 0;
 var c2 =0;
 exports.anim = {
-	tick: function (count,phase,phaselength,setPar) 
+	tick: function (count,phase,phaselength,setPar,setScanner,setStrobe) 
 	{
 		c2++;
 		//console.log(phase);	
@@ -53,9 +53,13 @@ exports.anim = {
 			setPar(5,0,0,0);
 		}
 
+		setScanner(0,255*127,255*127,0,112,0,0,255);	
+		setScanner(1,255*127,255*127,0,112,0,0,255);	
+		setStrobe(0,0);
+
 
 	},
-	duration:60,
+	duration:12,
 	step:0.0167
 }
 

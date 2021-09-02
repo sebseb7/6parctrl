@@ -3,7 +3,7 @@ var phasecount=0;
 var phasecount2=0;
 
 exports.anim = {
-	tick: function (count,phase,phaselength,setPar) 
+	tick: function (count,phase,phaselength,setPar,setScanner,setStrobe) 
 	{
 		if(phasecount2<4){
 			setPar(0,0,0,255);
@@ -65,7 +65,9 @@ exports.anim = {
 				setPar(5,0,0,0,255);
 			}
 		}
-
+		setScanner(0,255*128,255*128,255,(phasecount==1)?46:36,78,115,255);	
+		setScanner(1,255*128,255*128,255,(phasecount==1)?36:46,78,141,255);	
+		setStrobe(0,0);
 
 	},
 	duration:60,

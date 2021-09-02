@@ -26,9 +26,10 @@ function HSVtoRGB(h, s, v) {
 
 var phasecount=0;
 var h = 0;
-
+var pos = 0;
+var dir = 0;
 exports.anim = {
-	tick: function (count,phase,phaselength,setPar) 
+	tick: function (count,phase,phaselength,setPar,setScanner,setStrobe) 
 	{
 		//console.log(phase);	
 		if(phase == 0) {
@@ -49,10 +50,20 @@ exports.anim = {
 			setPar(4,rgb.r,rgb.g,rgb.b);
 			setPar(5,rgb.r,rgb.g,rgb.b);
 		}
+			if(dir == 0) {
+				pos++;
+				if(pos==255) dir=1;
+			}else{
+				pos--;
+				if(pos==0) dir=0;
+			}
 
+		setScanner(0,255*pos,255*127,255,(phasecount<2)?80:96,68,78,255);	
+		setScanner(1,255*(255-pos),255*127,255,(phasecount<2)?96:80,68,78,255);	
+		setStrobe(0,0);
 
 	},
-	duration:60,
+	duration:180,
 	step:0.0167
 }
 

@@ -108,6 +108,16 @@ for(var i = 0; i < input.getPortCount();i++){
 	}
 }
 
+const nanoctrl = new midi.Input();
+var nanoavail = false;
+for(var i = 0; i < nanoctrl.getPortCount();i++){
+	console.log(nanoctrl.getPortName(i));
+	if(nanoctrl.getPortName(i) == 'nanoKONTROL2 1'){
+		nanoctrl.openPort(i);
+		nanoavail = true;
+	}
+}
+
 
 
 
@@ -115,14 +125,12 @@ var animations = [];
 var padani = [];
 var curr_anim = 0;
 
-//animations.push(require('./step0.js').anim);
-
 animations.push(require('./step1.js').anim);
-animations.push(require('./step2.js').anim);
 animations.push(require('./step3.js').anim);
 animations.push(require('./step4.js').anim);
 animations.push(require('./step5.js').anim);
 animations.push(require('./step6.js').anim);
+animations.push(require('./step2.js').anim);
 animations.push(require('./step7.js').anim);
 padani.push(require('./pad1.js').anim);
 padani.push(require('./pad2.js').anim);
@@ -138,7 +146,7 @@ function now(){
 }
 var count = 0;
 
-var channels = 40;
+var channels = 65;
 var dmxData = Buffer.alloc(channels, 0);
 function setPar(x,r,g,b,uv=0){
 	dmxData[(x*4)+1]=r;
@@ -148,19 +156,27 @@ function setPar(x,r,g,b,uv=0){
 }
 
 function setScan(n,x,y,v,c,g,gr){
-	dmxData[(n*14)+1]=x;
-	dmxData[(n*14)+2]=0;
-	dmxData[(n*14)+3]=y;
-	dmxData[(n*14)+4]=0;
-	dmxData[(n*14)+5]=0;
-	dmxData[(n*14)+6]=v;
-	dmxData[(n*14)+7]=0;
-	dmxData[(n*14)+8]=c;
-	dmxData[(n*14)+9]=g;
-	dmxData[(n*14)+10]=gr;
-	dmxData[(n*14)+11]=255;
-	dmxData[(n*14)+12]=0;
-	dmxData[(n*14)+13]=0;
+	dmxData[(n*14)+36]=x >> 8;
+	dmxData[(n*14)+37]=x%255;
+	dmxData[(n*14)+38]=y >> 8;
+	dmxData[(n*14)+39]=y%255;
+	dmxData[(n*14)+40]=0;
+	dmxData[(n*14)+41]=v;
+	dmxData[(n*14)+42]=0;
+	dmxData[(n*14)+43]=c;
+	dmxData[(n*14)+44]=g;
+	dmxData[(n*14)+45]=gr;
+	dmxData[(n*14)+46]=255;
+	dmxData[(n*14)+47]=0;
+	dmxData[(n*14)+48]=0;
+}
+function setStrobe(b,f){
+	dmxData[33]=b;
+	dmxData[34]=f;
+	dmxData[35]=0;
+}
+function setFog(v){
+	dmxData[64]=v;
 }
 var phasetype = 0;
 
@@ -203,6 +219,34 @@ input_nxs.on('message', (deltaTime, message) => {
 
 	//	console.log(message);
 	}
+});
+nanoctrl.on('message', (deltaTime, message) => {
+	if((message[0]==176)&&(message[1]==0)){
+		dmxData[36]=message[2]*2;
+	}
+	else if((message[0]==176)&&(message[1]==1)){
+		dmxData[38]=message[2]*2;
+	}
+	else if((message[0]==176)&&(message[1]==2)){
+		dmxData[41]=message[2]*2;
+	}
+	else if((message[0]==176)&&(message[1]==3)){
+		dmxData[43]=message[2]*2;
+	}
+	else if((message[0]==176)&&(message[1]==4)){
+		dmxData[44]=message[2]*2;
+	}
+	else if((message[0]==176)&&(message[1]==5)){
+		dmxData[45]=message[2]*2;
+	}
+	else if((message[0]==176)&&(message[1]==6)){
+		dmxData[46]=message[2]*2;
+	}
+	else if((message[0]==176)&&(message[1]==7)){
+		dmxData[64]=message[2]*2;
+	}
+	//else
+		console.log(message[2]*2);
 });
 input.on('message', (deltaTime, message) => {
 
@@ -364,18 +408,16 @@ setInterval(function () {
 	}
 
 	if(pads != 0) {
-		padani[pads-1].tick(count,phase,phaselength,setPar,setScan);
-		setPar(8,phase % 255,phaselength % 255,level,1);
+		padani[pads-1].tick(count,phase,phaselength,setPar,setScan,setStrobe);
 	}else{
-		setPar(8,phase % 255,phaselength % 255,level,curr_anim);
 		count+=animations[curr_anim].step;
-		animations[curr_anim].tick(count,phase,phaselength,setPar,setScan);
+		animations[curr_anim].tick(count,phase,phaselength,setPar,setScan,setStrobe);
 	}
 	phase++;
 	if(count > animations[curr_anim].duration / 4){
 		count=0;
 		curr_anim++;
-		//console.log((new Date())+' new ani '+curr_anim);
+		console.log((new Date())+' new ani '+curr_anim);
 	}
 	if(curr_anim == animations.length) {
 		curr_anim = 0;

@@ -25,19 +25,35 @@ function HSVtoRGB(h, s, v) {
 }
 
 var h = 0;
+
+var posx1 = 0;
+var posx2 = 0;
+var posy1 = 0;
+var posy2 = 0;
+var side = 0;
+
 exports.anim = {
-	tick: function (count,phase,phaselength,setPar) 
+	tick: function (count,phase,phaselength,setPar,setScanner,setStrobe) 
 	{
 		//console.log(phase);	
 		if(phase == 0) {
 			h = 255;
+			if(side==0){
+				side=1;
+				posx1 = Math.random()*255*255;
+				posy1 = Math.random()*255*255;
+			}else{
+				side=0;
+				posx2 = Math.random()*255*255;
+				posy2 = Math.random()*255*255;
+			}
 		}
 		setPar(2,h,0,0,0);
 		setPar(3,h,0,0,0);
 		setPar(4,h,0,0,0);
 		setPar(5,h,0,0,0);
 
-		if(h > 10) {h-=10}else{h=0};
+		if(h > (255/(0.7*phaselength))) {h-=(255/(0.7*phaselength))}else{h=0};
 		
 		if((phase % 5) == 0 ){
 			setPar(0,0,0,255);
@@ -49,9 +65,13 @@ exports.anim = {
 			setPar(1,0,0,0);
 		}
 
+		setScanner(0,posx1,posy1,(side==0)?h:0,112,0,0,255);	
+		setScanner(1,posx2,posy2,(side==0)?0:h,112,0,0,255);	
+		setStrobe(0,0);
+
 
 	},
-	duration:60,
+	duration:120,
 	step:0.0167
 }
 
