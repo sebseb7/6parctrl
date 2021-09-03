@@ -51,11 +51,11 @@ exports.anim = {
 			setPar(5,rgb.r,rgb.g,rgb.b);
 		}
 			if(dir == 0) {
-				pos++;
-				if(pos==255) dir=1;
+				pos+=3;
+				if(pos>253) dir=1;
 			}else{
-				pos--;
-				if(pos==0) dir=0;
+				pos-=3;
+				if(pos<2) dir=0;
 			}
 
 		setScanner(0,255*pos,255*127,255,(phasecount<2)?80:96,68,78,255);	
@@ -64,6 +64,7 @@ exports.anim = {
 
 	},
 	duration:180,
-	step:0.0167
+	step:0.0167,
+	enabled:1
 }
 

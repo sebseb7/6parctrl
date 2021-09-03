@@ -132,13 +132,14 @@ var leds = 1;
 var scans = 1;
 var strobe = 1;
 var fog = 1;
+var manualfog = 0;
 var mstrobe1=0;
 var mstrobe2=0
+var programmode = 0;
 
 var animations = [];
 var padani = [];
 var curr_anim = 0;
-nanoout.sendMessage([176,32+curr_anim,127]);
 nanoout.sendMessage([176,45,127]);
 nanoout.sendMessage([176,44,127]);
 nanoout.sendMessage([176,43,127]);
@@ -160,7 +161,12 @@ padani.push(require('./pad1.js').anim);
 padani.push(require('./pad1.js').anim);
 padani.push(require('./pad1.js').anim);
 padani.push(require('./pad8.js').anim);
-
+		
+for(var i = 0; i < animations.length;i++){
+	nanoout.sendMessage([176,32+i,0]);
+}
+nanoout.sendMessage([176,32+curr_anim,127]);
+var anim_enabled = animations.length;
 function now(){
 	return Math.floor(Date.now() / 1000);
 }
@@ -178,6 +184,13 @@ function setPar(x,r,g,b,uv=0){
 
 function setScan(n,x,y,v,c,g,gr){
 	if (scans == 0) return;
+	const lowerlim = 64;
+	const upperlim = 191;
+
+	const factor = 255/(255-((255-upperlim)+lowerlim));
+	x = x / factor;
+	x = x + lowerlim*255;
+
 	dmxData[(n*14)+36]=x >> 8;
 	dmxData[(n*14)+37]=x%255;
 	dmxData[(n*14)+38]=y >> 8;
@@ -243,6 +256,20 @@ input_nxs.on('message', (deltaTime, message) => {
 	//	console.log(message);
 	}
 });
+function fogon(){
+	setTimeout(function(){
+		if(fog) dmxData[64]=255;
+		fogoff();
+	},3*60*1000);
+}
+function fogoff(){
+	setTimeout(function(){
+		if(fog && !manualfog)dmxData[64]=0;
+		fogon();
+	},20*1000);
+}
+fogon();
+
 nanoctrl.on('message', (deltaTime, message) => {
 	if((message[0]==176)&&(message[1]==16)){
 		djblue = message[2]*2;
@@ -259,22 +286,22 @@ nanoctrl.on('message', (deltaTime, message) => {
 		mstrobe2=message[2]*2;
 	}
 	else if((message[0]==176)&&(message[1]==2)){
-		dmxData[41]=message[2]*2;
+		//dmxData[41]=message[2]*2;
 	}
 	else if((message[0]==176)&&(message[1]==3)){
-		dmxData[43]=message[2]*2;
+		//dmxData[43]=message[2]*2;
 	}
 	else if((message[0]==176)&&(message[1]==4)){
-		dmxData[44]=message[2]*2;
+		//dmxData[44]=message[2]*2;
 	}
 	else if((message[0]==176)&&(message[1]==5)){
-		dmxData[45]=message[2]*2;
+		//dmxData[45]=message[2]*2;
 	}
 	else if((message[0]==176)&&(message[1]==6)){
-		dmxData[46]=message[2]*2;
+		//dmxData[46]=message[2]*2;
 	}
 	else if((message[0]==176)&&(message[1]==7)){
-		dmxData[64]=message[2]*2;
+		//dmxData[64]=message[2]*2;
 	}
 	else if((message[0]==176)&&(message[1]==41)&&(message[2]==0)){
 		if(leds == 1) {
@@ -291,7 +318,7 @@ nanoctrl.on('message', (deltaTime, message) => {
 			nanoout.sendMessage([176,41,127]);
 		}
 	}
-	else if((message[0]==176)&&(message[1]==45)&&(message[2]==0)){
+	else if((message[0]==176)&&(message[1]==45)&&(message[2]==127)){
 		if(auto == 1) {
 			nanoout.sendMessage([176,45,0]);
 			auto=0;
@@ -326,23 +353,68 @@ nanoctrl.on('message', (deltaTime, message) => {
 		if(fog == 1) {
 			nanoout.sendMessage([176,43,0]);
 			fog=0;
+			if(!manualfog)dmxData[64]=0;
 		}else{
 			nanoout.sendMessage([176,43,127]);
 			fog=1;
 		}
 	}
+	else if((message[0]==176)&&(message[1]==46)&&(message[2]==127)){
+		if(manualfog == 1) {
+			nanoout.sendMessage([176,46,0]);
+			manualfog=0;
+			dmxData[64]=0;
+		}else{
+			nanoout.sendMessage([176,46,127]);
+			manualfog=1;
+			dmxData[64]=255;
+		}
+	}
+	else if((message[0]==176)&&(message[1]==62)&&(message[2]==127)){
+		programmode=1;
+		for(var i = 0; i < animations.length;i++){
+			if(animations[i].enabled) {
+				nanoout.sendMessage([176,32+i,127]);
+			}else{
+				nanoout.sendMessage([176,32+i,0]);
+			}
+		}
+	}
+	else if((message[0]==176)&&(message[1]==62)&&(message[2]==0)){
+		programmode=0;
+		for(var i = 0; i < animations.length;i++){
+			if(i == curr_anim) {
+				nanoout.sendMessage([176,32+i,127]);
+			}else{
+				nanoout.sendMessage([176,32+i,0]);
+			}
+		}
+	}
 	else if((message[0]==176)&&(message[1]>31)&&(message[1]<40)&&(message[2]==127)){
 		var new_ani = message[1]-32;
-
 		if(new_ani >= animations.length) return;
-		count=0;
-		nanoout.sendMessage([176,32+curr_anim,0]);
-		curr_anim=new_ani;
-		nanoout.sendMessage([176,32+curr_anim,127]);
+		if(programmode == 1) {
+			if(animations[new_ani].enabled){
+				if(anim_enabled > 2){
+					animations[new_ani].enabled=0;
+					nanoout.sendMessage([176,32+new_ani,0]);
+					anim_enabled--;
+				}
+			}else{
+				anim_enabled++;
+				animations[new_ani].enabled=1;
+				nanoout.sendMessage([176,32+new_ani,127]);
+			}
+		}else{
+			count=0;
+			nanoout.sendMessage([176,32+curr_anim,0]);
+			curr_anim=new_ani;
+			nanoout.sendMessage([176,32+curr_anim,127]);
+		}
 	}
 	//else
-		console.log(message);
-		console.log(message[2]*2);
+	//console.log(message);
+	//console.log(message[2]*2);
 });
 input.on('message', (deltaTime, message) => {
 
@@ -513,14 +585,16 @@ setInterval(function () {
 	if(count > animations[curr_anim].duration / 4){
 		count=0;
 		if(auto == 1){
-			nanoout.sendMessage([176,32+curr_anim,0]);
-			curr_anim++;
-			if(curr_anim == animations.length) {
-				curr_anim = 0;
-			}
-			nanoout.sendMessage([176,32+curr_anim,127]);
+			if(programmode==0) nanoout.sendMessage([176,32+curr_anim,0]);
+			do{
+				curr_anim++;
+				if(curr_anim == animations.length) {
+					curr_anim = 0;
+				}
+			}while(animations[curr_anim].enabled==0);
+			if(programmode==0) nanoout.sendMessage([176,32+curr_anim,127]);
 		}
-		console.log((new Date())+' new ani '+curr_anim);
+		//console.log((new Date())+' new ani '+curr_anim);
 	}
 	dmxData[30]=0;
 	if (port && dmxmode == 'enttec') {

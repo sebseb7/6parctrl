@@ -56,7 +56,6 @@ exports.anim = {
 			var goboarr = [16,52,68,72];
 			col = colarr[colsel];
 			gobo = goboarr[gobosel];
-			console.log('switch');
 		}
 		if(phase == 0) {
 			h += 0.55;
@@ -159,6 +158,7 @@ exports.anim = {
 
 	},
 	duration:180,
-	step:0.0167
+	step:0.0167,
+	enabled:1
 }
 

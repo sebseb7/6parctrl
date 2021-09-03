@@ -72,6 +72,7 @@ exports.anim = {
 
 	},
 	duration:120,
-	step:0.0167
+	step:0.0167,
+	enabled:1
 }
 
